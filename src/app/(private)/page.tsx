@@ -6,49 +6,32 @@ import { userAtom } from "@/atom/userAtom";
 import AddTaskModal from "@/components/addTaskModal/AddTaskModal";
 import { Button } from "@/components/ui/button";
 import { FOOTER_MENUS } from "@/constants/footerMenu";
-import { useAtomValue, useSetAtom } from "jotai";
+import { fetchTodos } from "@/lib/fetchTodos";
+import { useAtom, useSetAtom } from "jotai";
 import { ClipboardList, Ellipsis } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
+ 
 export default function Home() {
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const tasks = useAtomValue(taskAtom);
+  const [tasks,setTasks] = useAtom(taskAtom);
   const setUser = useSetAtom(userAtom);
 
   const router = useRouter()
 
-  // const handleToggleMenu = (id: string) => {
-  //   console.log(id);
-
-  //   // クリックしたらtoggleMenuの値を反転させる
-  //   setDammyData((prevData) =>
-  //     prevData.map((data) =>
-  //       data.id === id
-  //         ? { ...data, toggleMenu: !data.toggleMenu }
-  //         : { ...data, toggleMenu: false }
-  //     )
-  //   );
-  // };
-
-  // const handleToggleStatus = (id: string) => {
-  //   setDammyData((prevData) =>
-  //     prevData.map((data) =>
-  //       data.id === id
-  //         ? {
-  //             ...data,
-  //             status: data.status === "Completed" ? "Active" : "Completed",
-  //             toggleMenu: false,
-  //           }
-  //         : data
-  //     )
-  //   );
-  // };
-
-  // const handleDeleteTask = (id: string) => {
-  //   setDammyData((prevData) => prevData.filter((data) => data.id !== id));
-  // };
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        const loadTasks = await fetchTodos();
+        setTasks(loadTasks);
+      } catch(error) {
+        console.error("タスクの取得に失敗しました", error);
+      }
+    }
+    loadTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[])
 
   const handleLogout = async () => {
     try {
@@ -63,7 +46,7 @@ export default function Home() {
 
   return (
     <div>
-      <header className="flex  items-center justify-center gap-2 p-4 bg-blue-300 text-white relative">
+      <header className="flex items-center justify-center gap-2 p-4 bg-blue-300 text-white relative">
         <ClipboardList />
         <h1 className="font-bold">Todo App</h1>
         <AddTaskModal
