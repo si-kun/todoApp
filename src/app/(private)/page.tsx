@@ -88,9 +88,9 @@ export default function Home() {
               className="flex items-center justify-between gap-4 p-4 border-b text-sm"
             >
               <td className="flex-1 text-center">
-                {data.task.length >= 10
-                  ? data.task.slice(0, 10) + "..."
-                  : data.task}
+                {data.title.length >= 10
+                  ? data.title.slice(0, 10) + "..."
+                  : data.title}
               </td>
               <td className="w-[72px] text-center">
                 {data.endDate

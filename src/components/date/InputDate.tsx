@@ -11,13 +11,13 @@ import {
 } from "@/components/ui/popover"
 
 interface InputDateProps {
-    handleEndDate:(date: Date) => void
+  value: Date | undefined;
+  onChange: (date: Date | undefined) => void;
 }
 
-const InputDate = ({handleEndDate}: InputDateProps) => {
+const InputDate = ({value,onChange}: InputDateProps) => {
 
     const [open,setOpen] = useState(false)
-    const [date, setDate] = useState<Date | undefined>(undefined)
 
   return (
     <div className="flex flex-col space-y-1.5">
@@ -31,18 +31,17 @@ const InputDate = ({handleEndDate}: InputDateProps) => {
           id="date"
           className="w-full justify-between font-normal"
         >
-          {date ? date.toLocaleDateString() : "Select date"}
+          {value ? value.toLocaleDateString() : "Select date"}
           <ChevronDownIcon />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto overflow-hidden p-0" align="start">
         <Calendar
           mode="single"
-          selected={date}
+          selected={value}
           captionLayout="dropdown"
           onSelect={(date) => {
-            setDate(date)
-            handleEndDate(date!)
+            onChange(date)
             setOpen(false)
           }}
         />
