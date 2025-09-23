@@ -66,7 +66,7 @@ const AddTaskModal = ({
 
   return (
     <Dialog open={addTaskModalOpen} onOpenChange={setAddTaskModalOpen}>
-      <DialogTrigger asChild className="absolute right-4 top-2.5">
+      <DialogTrigger asChild className="absolute right-0 top-[50%] transform -translate-[50%]">
         <Button variant={"outline"}>
           <ListPlus className="text-black" />
         </Button>

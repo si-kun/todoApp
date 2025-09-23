@@ -1,6 +1,8 @@
 "use client";
 
 import { logout } from "@/actions/auth/logout";
+import { deleteTodo } from "@/actions/todo/deleteTodo";
+import { toggleStatus } from "@/actions/todo/toggleStatus";
 import { taskAtom } from "@/atom/taskAtom";
 import { userAtom } from "@/atom/userAtom";
 import AddTaskModal from "@/components/addTaskModal/AddTaskModal";
@@ -12,32 +14,82 @@ import { ClipboardList, Ellipsis } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
- 
+
 export default function Home() {
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const [tasks,setTasks] = useAtom(taskAtom);
+  const [toggleMenuId, setToggleMenuId] = useState<string | null>(null);
+  const [tasks, setTasks] = useAtom(taskAtom);
   const setUser = useSetAtom(userAtom);
 
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
     const loadTasks = async () => {
       try {
         const loadTasks = await fetchTodos();
         setTasks(loadTasks);
-      } catch(error) {
+      } catch (error) {
         console.error("タスクの取得に失敗しました", error);
       }
-    }
+    };
     loadTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[])
+  }, []);
+
+  const handleToggleMenu = (id: string) => {
+    setToggleMenuId((prevId) => (prevId === id ? null : id));
+  };
+
+  // タスクステータス切り替え処理
+  const handleToggleStatus = async (id: string) => {
+    try {
+      // ステータス切り替えのAPI呼び出し
+      const result = await toggleStatus(id);
+      if (!result.success) {
+        throw new Error("タスクのステータス変更に失敗しました");
+      }
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === id
+            ? {
+                ...task,
+                status: task.status === "Active" ? "Completed" : "Active",
+              }
+            : task
+        )
+      );
+      setToggleMenuId(null);
+    } catch (error) {
+      console.error("タスクのステータス変更に失敗しました", error);
+      // エラー時にタスクを再取得する
+      const loadTasks = await fetchTodos();
+      setTasks(loadTasks);
+    }
+  };
+
+  // タスク削除処理
+  const handleDeleteTask = async (id: string) => {
+    try {
+      // 削除APIの呼び出し
+      const result = await deleteTodo(id);
+      if (!result.success) {
+        throw new Error("タスクの削除に失敗しました");
+      }
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+      setToggleMenuId(null);
+    } catch (error) {
+      console.error("タスクの削除に失敗しました", error);
+      // エラー時に再度タスクを取得する
+      const loadTasks = await fetchTodos();
+      setTasks(loadTasks);
+    }
+  };
 
   const handleLogout = async () => {
     try {
       await logout();
       setUser(null);
-      router.replace("/login")
+      router.replace("/login");
       console.log("ログアウト成功");
     } catch (error) {
       console.error("ログアウトエラー", error);
@@ -45,8 +97,8 @@ export default function Home() {
   };
 
   return (
-    <div>
-      <header className="flex items-center justify-center gap-2 p-4 bg-blue-300 text-white relative">
+    <div className="h-screen flex flex-col overflow-y-hidden">
+      <header className="min-h-[60px] flex items-center justify-center gap-2 bg-blue-300 text-white relative">
         <ClipboardList />
         <h1 className="font-bold">Todo App</h1>
         <AddTaskModal
@@ -55,7 +107,7 @@ export default function Home() {
         />
       </header>
 
-      <table className="w-full flex flex-col items-center justify-center">
+      <table className="w-full justify-center flex flex-col flex-1 overflow-y-auto">
         <thead className="w-full">
           <tr className="bg-gray-200 flex items-center gap-4 p-4 text-sm font-bold">
             <th className="flex-1">Task</th>
@@ -64,7 +116,7 @@ export default function Home() {
             <th className="w-[50px]">Actions</th>
           </tr>
         </thead>
-        <tbody className="w-full">
+        <tbody className="w-full flex-1 overflow-y-auto max-h-[calc(100vh-120px)]">
           {tasks.map((data) => (
             <tr
               key={data.id}
@@ -89,11 +141,13 @@ export default function Home() {
               </td>
               <td className="w-[50px] flex items-center justify-center cursor-pointer relative">
                 <Ellipsis
-                  className="bg-gray-400 rounded-full text-white"
+                  className={` rounded-full text-white ${
+                    toggleMenuId === data.id ? "bg-yellow-400" : "bg-gray-400"
+                  }`}
                   onClick={() => handleToggleMenu(data.id)}
                 />
 
-                {data.toggleMenu && (
+                {toggleMenuId === data.id && (
                   <ul className="absolute top-8 right-0 bg-white border shadow-md rounded-md text-gray-700 p-1 z-50">
                     <li
                       onClick={() => handleToggleStatus(data.id)}
@@ -118,15 +172,14 @@ export default function Home() {
         </tbody>
       </table>
 
-      <footer className="bg-blue-300 p-2 fixed bottom-0 w-full">
-        <ul className="flex items-center justify-between ">
+      <footer className="bg-blue-300 flex items-center justify-center min-h-[60px] w-full">
+        <ul className="flex items-center justify-between w-full">
           {FOOTER_MENUS.map((menu) => (
             <li key={menu.name} className="p-2">
               {menu.name === "logout" ? (
-
-              <Button variant={"ghost"} onClick={() => handleLogout()} >
-                {menu.icon}
-              </Button>
+                <Button variant={"ghost"} onClick={() => handleLogout()}>
+                  {menu.icon}
+                </Button>
               ) : (
                 <Button asChild variant={"ghost"}>
                   <Link href={menu.href}>{menu.icon}</Link>
