@@ -5,7 +5,7 @@ import { deleteTodo } from "@/actions/todo/deleteTodo";
 import { toggleStatus } from "@/actions/todo/toggleStatus";
 import { taskAtom } from "@/atom/taskAtom";
 import { userAtom } from "@/atom/userAtom";
-import AddTaskModal from "@/components/addTaskModal/AddTaskModal";
+import TaskModal from "@/components/addTaskModal/TaskModal";
 import { Button } from "@/components/ui/button";
 import { FOOTER_MENUS } from "@/constants/footerMenu";
 import { fetchTodos } from "@/lib/fetchTodos";
@@ -16,8 +16,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [toggleMenuId, setToggleMenuId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [tasks, setTasks] = useAtom(taskAtom);
   const setUser = useSetAtom(userAtom);
 
@@ -39,6 +40,8 @@ export default function Home() {
   const handleToggleMenu = (id: string) => {
     setToggleMenuId((prevId) => (prevId === id ? null : id));
   };
+
+  const editingTask = tasks.find((task) => task.id === editingTaskId) || null;
 
   // タスクステータス切り替え処理
   const handleToggleStatus = async (id: string) => {
@@ -85,6 +88,13 @@ export default function Home() {
     }
   };
 
+  const handleEditTask = (id: string) => {
+    setEditingTaskId((prev) => (prev === id ? null : id));
+    setToggleMenuId(null);
+    console.log("edit state", editingTaskId);
+    console.log("edit", id);
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -101,9 +111,10 @@ export default function Home() {
       <header className="min-h-[60px] flex items-center justify-center gap-2 bg-blue-300 text-white relative">
         <ClipboardList />
         <h1 className="font-bold">Todo App</h1>
-        <AddTaskModal
-          addTaskModalOpen={addTaskModalOpen}
-          setAddTaskModalOpen={setAddTaskModalOpen}
+        <TaskModal
+          mode={"add"}
+          taskModalOpen={taskModalOpen}
+          setTaskModalOpen={setTaskModalOpen}
         />
       </header>
 
@@ -148,14 +159,17 @@ export default function Home() {
                 />
 
                 {toggleMenuId === data.id && (
-                  <ul className="absolute top-8 right-0 bg-white border shadow-md rounded-md text-gray-700 p-1 z-50">
+                  <ul className="absolute top-8 right-0 bg-white border shadow-md rounded-md text-gray-700 p-1 z-50 flex flex-col">
                     <li
                       onClick={() => handleToggleStatus(data.id)}
                       className="hover:bg-blue-400 hover:text-white p-1 rounded-md"
                     >
                       {data.status === "Completed" ? "active" : "completed"}
                     </li>
-                    <li className="hover:bg-blue-400 hover:text-white p-1 rounded-md">
+                    <li
+                      onClick={() => handleEditTask(data.id)}
+                      className="hover:bg-blue-400 hover:text-white p-1 rounded-md"
+                    >
                       edit
                     </li>
                     <li
@@ -171,6 +185,15 @@ export default function Home() {
           ))}
         </tbody>
       </table>
+
+      {editingTaskId && (
+        <TaskModal
+          mode={"edit"}
+          editingTask={editingTask}
+          taskModalOpen={Boolean(editingTaskId)}
+          setTaskModalOpen={() => setEditingTaskId(null)}
+        />
+      )}
 
       <footer className="bg-blue-300 flex items-center justify-center min-h-[60px] w-full">
         <ul className="flex items-center justify-between w-full">
